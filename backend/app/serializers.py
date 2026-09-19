@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from app.models.grind_pass import GrindPass
 from app.models.mill import Mill
+from app.models.rework_ticket import ReworkTicket
 from app.models.user import User
 from app.models.viscosity_sample import ViscositySample
 from app.models.workshop import Workshop
@@ -63,4 +64,16 @@ def grind_pass_json(row: GrindPass) -> dict:
         "durationMin": _num(row.duration_min) or 0,
         "mediaType": row.media_type,
         "operatorName": row.operator_name,
+    }
+
+
+def rework_ticket_json(row: ReworkTicket) -> dict:
+    return {
+        "id": row.id,
+        "millId": row.mill_id,
+        "complaintRef": row.complaint_ref,
+        "severityPaS": _num(row.severity_pa_s) or 0,
+        "status": row.status,
+        "openedAt": dt_to_json(row.opened_at),
+        "closedAt": dt_to_json(row.closed_at),
     }

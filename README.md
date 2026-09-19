@@ -34,7 +34,16 @@ MySQL 连接：`inkmill` / `inkmill` / `inkmill`（库名/用户/密码）
 2. **Mill**：`workshopId`, `millCode`（同车间唯一）, `pigmentBase`, `bowlLiters`, `status`（`grinding` \| `idle` \| `wash`）
 3. **ViscositySample**：`millId`, `sampledAt`, `viscosityPaS`（须 &gt; 0，否则 HTTP 400）, `tempC`, `notes`
 4. **GrindPass**：`millId`, `startedAt`, `passNo`（≥ 1）, `durationMin`（&gt; 0）, `mediaType`, `operatorName`
-5. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
+5. **ReworkTicket**（客诉回磨任务）：`millId`, `complaintRef`（客诉单号）, `severityPaS`（粘度偏差，须 &gt; 0）, `status`（`open` \| `rework_done` \| `closed`）, `openedAt`, `closedAt`（可空）
+6. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
+
+### 回磨任务流转规则
+
+- 状态机：`open` → `rework_done` → `closed`，不可回退、不可跳级（违规 HTTP 409）。
+- 流转接口：`POST /api/rework-tickets/<id>/status`，Body `{"status": "rework_done" | "closed"}`。
+- **关闭前置条件**：该机在 `openedAt` 之后至少有 1 条 `ViscositySample`，否则 HTTP 409。
+- `closed` 后禁止修改粘度目标等字段（HTTP 409）。
+- 前端「回磨任务」页可查看详情并流转，详情内可跳转「粘度取样」页（自动预选该机）。
 
 ## 快速启动（Docker）
 

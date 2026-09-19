@@ -5,6 +5,7 @@ from app.auth import hash_password
 from app.database import SessionLocal
 from app.models.grind_pass import GrindPass
 from app.models.mill import Mill
+from app.models.rework_ticket import ReworkTicket
 from app.models.user import User
 from app.models.viscosity_sample import ViscositySample
 from app.models.workshop import Workshop
@@ -112,6 +113,56 @@ def seed() -> None:
             print("Seed data inserted.")
         else:
             print("Seed skipped (workshops exist).")
+
+        if db.query(ReworkTicket).count() == 0:
+            mills = db.query(Mill).order_by(Mill.id).all()
+            if mills:
+                now = datetime.now()
+                closed_mill = mills[0]
+                done_mill = mills[1 % len(mills)]
+                open_mill = mills[2 % len(mills)]
+
+                opened_closed = now - timedelta(days=4)
+                # 关闭前置条件:该机在 openedAt 之后至少有 1 条粘度取样
+                db.add(
+                    ViscositySample(
+                        mill_id=closed_mill.id,
+                        sampled_at=opened_closed + timedelta(days=2),
+                        viscosity_pa_s=Decimal("8.6000"),
+                        temp_c=Decimal("28.00"),
+                        notes="回磨后复检,粘度恢复区间",
+                    )
+                )
+                db.add_all(
+                    [
+                        ReworkTicket(
+                            mill_id=closed_mill.id,
+                            complaint_ref="KS-2026-0902",
+                            severity_pa_s=Decimal("3.2000"),
+                            status="closed",
+                            opened_at=opened_closed,
+                            closed_at=opened_closed + timedelta(days=3),
+                        ),
+                        ReworkTicket(
+                            mill_id=done_mill.id,
+                            complaint_ref="KS-2026-0911",
+                            severity_pa_s=Decimal("1.8000"),
+                            status="rework_done",
+                            opened_at=now - timedelta(days=2),
+                            closed_at=None,
+                        ),
+                        ReworkTicket(
+                            mill_id=open_mill.id,
+                            complaint_ref="KS-2026-0917",
+                            severity_pa_s=Decimal("2.4500"),
+                            status="open",
+                            opened_at=now - timedelta(hours=6),
+                            closed_at=None,
+                        ),
+                    ]
+                )
+                db.commit()
+                print("Rework ticket seed data inserted.")
     finally:
         db.close()
 
