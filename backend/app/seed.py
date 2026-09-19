@@ -5,6 +5,7 @@ from app.auth import hash_password
 from app.database import SessionLocal
 from app.models.grind_pass import GrindPass
 from app.models.mill import Mill
+from app.models.rework_ticket import ReworkTicket
 from app.models.user import User
 from app.models.viscosity_sample import ViscositySample
 from app.models.workshop import Workshop
@@ -112,6 +113,53 @@ def seed() -> None:
             print("Seed data inserted.")
         else:
             print("Seed skipped (workshops exist).")
+
+        if db.query(ReworkTicket).count() == 0:
+            mills = db.query(Mill).order_by(Mill.id).all()
+            if mills:
+                now = datetime.now()
+                closed_mill = mills[0]
+                opened_at = now - timedelta(days=3)
+                db.add_all(
+                    [
+                        ReworkTicket(
+                            mill_id=closed_mill.id,
+                            complaint_ref="客诉 C-2026-018",
+                            severity_pa_s=Decimal("4.5000"),
+                            status="closed",
+                            opened_at=opened_at,
+                            closed_at=now - timedelta(days=1),
+                        ),
+                        ReworkTicket(
+                            mill_id=mills[-1].id,
+                            complaint_ref="客诉 C-2026-041",
+                            severity_pa_s=Decimal("2.7500"),
+                            status="open",
+                            opened_at=now - timedelta(hours=6),
+                        ),
+                    ]
+                )
+                # 关闭工单要求 openedAt 之后有取样:补一条回磨复检样,保证演示数据自洽
+                recheck = (
+                    db.query(ViscositySample)
+                    .filter(
+                        ViscositySample.mill_id == closed_mill.id,
+                        ViscositySample.sampled_at > opened_at,
+                    )
+                    .first()
+                )
+                if not recheck:
+                    db.add(
+                        ViscositySample(
+                            mill_id=closed_mill.id,
+                            sampled_at=now - timedelta(days=2),
+                            viscosity_pa_s=Decimal("10.2000"),
+                            temp_c=Decimal("28.00"),
+                            notes="客诉回磨后复检",
+                        )
+                    )
+                db.commit()
+                print("Rework ticket seed inserted.")
     finally:
         db.close()
 

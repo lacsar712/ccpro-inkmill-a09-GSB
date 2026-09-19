@@ -34,7 +34,11 @@ MySQL 连接：`inkmill` / `inkmill` / `inkmill`（库名/用户/密码）
 2. **Mill**：`workshopId`, `millCode`（同车间唯一）, `pigmentBase`, `bowlLiters`, `status`（`grinding` \| `idle` \| `wash`）
 3. **ViscositySample**：`millId`, `sampledAt`, `viscosityPaS`（须 &gt; 0，否则 HTTP 400）, `tempC`, `notes`
 4. **GrindPass**：`millId`, `startedAt`, `passNo`（≥ 1）, `durationMin`（&gt; 0）, `mediaType`, `operatorName`
-5. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
+5. **ReworkTicket**（客诉回磨任务）：`millId`, `complaintRef`, `severityPaS`（粘度目标，须 &gt; 0，否则 HTTP 400）, `status`（`open` → `rework_done` → `closed`，单向流转）, `openedAt`, `closedAt`（可空）
+   - 关闭（→ `closed`）前要求该研磨机在 `openedAt` 之后至少有 1 条粘度取样，否则 HTTP 409
+   - `closed` 后禁止修改 `severityPaS`（HTTP 409）
+   - 接口：`GET/POST /api/rework-tickets`、`GET/PUT /api/rework-tickets/<id>`、`POST /api/rework-tickets/<id>/transition`
+6. **Dashboard**：`workshopTotal`, `grindingMillCount`, `samplesLast24h`, `passesLast7d`
 
 ## 快速启动（Docker）
 

@@ -44,6 +44,18 @@ export interface GrindPass {
   operatorName: string;
 }
 
+export type ReworkTicketStatus = 'open' | 'rework_done' | 'closed';
+
+export interface ReworkTicket {
+  id: number;
+  millId: number;
+  complaintRef: string;
+  severityPaS: number;
+  status: ReworkTicketStatus;
+  openedAt: string;
+  closedAt: string | null;
+}
+
 export interface DashboardStats {
   workshopTotal: number;
   grindingMillCount: number;

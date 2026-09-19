@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { api } from '../lib/api';
+  import { samplePrefillMillId } from '../lib/nav';
   import type { Mill, ViscositySample } from '../lib/types';
 
   let rows: ViscositySample[] = [];
@@ -29,7 +31,13 @@
         api<ViscositySample[]>('/viscosity-samples'),
         api<Mill[]>('/mills'),
       ]);
-      if (!form.millId && mills[0]) form.millId = String(mills[0].id);
+      const prefill = get(samplePrefillMillId);
+      if (prefill != null && mills.some((m) => m.id === prefill)) {
+        form.millId = String(prefill);
+        samplePrefillMillId.set(null);
+      } else if (!form.millId && mills[0]) {
+        form.millId = String(mills[0].id);
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : '加载失败';
     }
